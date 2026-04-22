@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: cluster-addons
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: metallb
+            repo: https://github.io
+            chart: metallb
+            namespace: metallb-system
+          - name: cert-manager
+            repo: https://jetstack.io
+            chart: cert-manager
+            namespace: cert-manager
+  template:
+    metadata:
+      name: '{{name}}'
+    spec:
+      project: default
+      sources:
+        # Source 1: The Helm Chart
+        - repoURL: '{{repo}}'
+          chart: '{{name}}'
+          targetRevision: HEAD
+          helm:
+            valueFiles:
+              - $values/apps/{{name}}/values.yaml
+        # Source 2: Your custom manifests (Issuers, IP Pools)
+        - repoURL: https://github.com # <--- CHANGE THIS
+          targetRevision: HEAD
+          path: apps/{{name}}
+          ref: values
+      destination:
+        server: https://default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated: {prune: true, selfHeal: true}
+        createNamespace: true
