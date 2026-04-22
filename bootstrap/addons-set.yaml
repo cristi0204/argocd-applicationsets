@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
   name: cluster-addons
-  namespace: argocd
+  namespace: efp-argocd # <- change this to your actual argocd namespace
 spec:
   generators:
     - list:
@@ -19,7 +19,7 @@ spec:
     metadata:
       name: '{{name}}'
     spec:
-      project: default
+      project: platform # <- you need to create this project or use default one
       sources:
         # Source 1: The Helm Chart
         - repoURL: '{{repo}}'
