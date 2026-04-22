@@ -1,1 +1,32 @@
 
+# 1. Create a "Bootstrap" Issuer that just creates self-signed certs
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned-bootstrap-issuer
+  namespace: cert-manager
+spec:
+  selfSigned: {}
+---
+# 2. Create a Root CA Certificate using that bootstrap issuer
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: root-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: efp-internal-ca # <- change the name to suit your naming conventions
+  secretName: root-ca-secret
+  issuerRef:
+    name: selfsigned-bootstrap-issuer
+    kind: Issuer
+---
+# 3. Create the ClusterIssuer that uses the Secret above to sign your apps
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  ca:
+    secretName: root-ca-secret
