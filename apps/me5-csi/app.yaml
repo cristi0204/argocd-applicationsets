@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: me5-csi
+  namespace: efp-argocd
+spec:
+  destination:
+    namespace: me5-csi
+    server: https://kubernetes.default.svc
+  source:
+    path: helm/csi-charts
+    repoURL: https://github.com/Seagate/seagate-exos-x-csi
+    targetRevision: HEAD
+    helm:
+      valueFiles:
+        - $values/apps/seagate-exos-csi/values.yaml
+  sources: []
+  project: platform
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true
+      enabled: true
