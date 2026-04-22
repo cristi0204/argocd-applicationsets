@@ -11,10 +11,12 @@ spec:
             repo: https://metallb.github.io/metallb
             chart: metallb
             namespace: metallb-system
+            version: "*"
           - name: cert-manager
             repo: https://charts.jetstack.io
             chart: cert-manager
             namespace: cert-manager
+            version: "*"
   template:
     metadata:
       name: '{{name}}'
@@ -24,7 +26,7 @@ spec:
         # Source 1: The Helm Chart
         - repoURL: '{{repo}}'
           chart: '{{name}}'
-          targetRevision: HEAD
+          targetRevision: '{{version}}'
           helm:
             valueFiles:
               - $values/apps/{{name}}/values.yaml
