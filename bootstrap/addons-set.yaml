@@ -8,11 +8,11 @@ spec:
     - list:
         elements:
           - name: metallb
-            repo: https://github.io
+            repo: https://metallb.github.io/metallb
             chart: metallb
             namespace: metallb-system
           - name: cert-manager
-            repo: https://jetstack.io
+            repo: https://charts.jetstack.io
             chart: cert-manager
             namespace: cert-manager
   template:
