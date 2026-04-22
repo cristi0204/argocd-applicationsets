@@ -29,12 +29,12 @@ spec:
             valueFiles:
               - $values/apps/{{name}}/values.yaml
         # Source 2: Your custom manifests (Issuers, IP Pools)
-        - repoURL: https://github.com # <--- CHANGE THIS
+        - repoURL: https://github.com/cristi0204/argocd-applicationsets # <--- CHANGE THIS
           targetRevision: HEAD
           path: apps/{{name}}
           ref: values
       destination:
-        server: https://default.svc
+        server: https://kubernetes.default.svc
         namespace: '{{namespace}}'
       syncPolicy:
         automated: {prune: true, selfHeal: true}
