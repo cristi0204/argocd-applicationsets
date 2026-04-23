@@ -19,7 +19,7 @@ spec:
             version: "*"
           - name: postgres-ha
             repo: https://charts.bitnami.com/bitnami
-            chart: bitnami/postgresql-ha
+            chart: "bitnami/postgresql-ha"
             namespace: efp-pg-ha
             version: "*"
   template:
