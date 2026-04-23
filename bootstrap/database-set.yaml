@@ -30,7 +30,7 @@ spec:
           targetRevision: HEAD
           ref: values
       destination:
-        server: https://default.svc
+        server: kubernetes.default.svc
         namespace: '{{namespace}}'
       syncPolicy:
         automated:
