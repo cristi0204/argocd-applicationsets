@@ -26,7 +26,7 @@ spec:
           helm:
             valueFiles:
               - $values/apps/{{valuesPath}}//values.yaml
-        - repoURL: https://github.com
+        - repoURL: https://github.com/cristi0204/argocd-applicationsets
           targetRevision: HEAD
           ref: values
       destination:
