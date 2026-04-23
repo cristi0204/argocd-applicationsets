@@ -1,27 +1,20 @@
 postgresql:
-  # Ensure this is higher than Pgpool's total potential connections
-  maxConnections: 200
   replicaCount: 3
+  maxConnections: 200
   podAntiAffinityPreset: hard
   resources:
     requests:
       memory: 1Gi
       cpu: 500m
+  # Persistence MUST be at this indentation level
   persistence:
     enabled: true
     size: 20Gi
-    storageClass: "iscsi-dell-me5-imd" 
+    storageClass: "iscsi-dell-me5-imd"
+
 pgpool:
   replicaCount: 2
-  podAntiAffinityPreset: soft
   resources:
     requests:
       memory: 256Mi
       cpu: 250m
-  # Connection pooling settings - 128
-  configuration: |
-    num_init_children = 32
-    max_pool = 4
-    connection_cache = on
-    connection_life_time = 300
-    client_idle_limit = 0
