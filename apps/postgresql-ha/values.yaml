@@ -7,10 +7,10 @@ postgresql:
       memory: 1Gi
       cpu: 500m
   # Persistence MUST be at this indentation level
-  persistence:
-    enabled: true
-    size: 20Gi
-    storageClass: "iscsi-dell-me5-imd"
+persistence:
+  enabled: true
+  size: 20Gi
+  storageClass: "iscsi-dell-me5-imd"
 
 pgpool:
   replicaCount: 2
