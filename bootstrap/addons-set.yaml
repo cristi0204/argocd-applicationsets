@@ -21,7 +21,7 @@ spec:
             repo: https://charts.bitnami.com/bitnami
             chart: "bitnami/postgresql-ha"
             namespace: efp-pg-ha
-            version: "*"
+            version: "16.3.2"
   template:
     metadata:
       name: '{{name}}'
