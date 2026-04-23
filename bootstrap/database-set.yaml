@@ -28,6 +28,7 @@ spec:
               - $values/apps/{{valuesPath}}//values.yaml
         - repoURL: https://github.com/cristi0204/argocd-applicationsets
           targetRevision: HEAD
+          path: apps/{{name}}
           ref: values
       destination:
         server: https://kubernetes.default.svc
