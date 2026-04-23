@@ -10,7 +10,7 @@ postgresql:
   persistence:
     enabled: true
     size: 20Gi
-    storageClass: "iscsi-dell-me5-retain" 
+    storageClass: "iscsi-dell-me5-imd" 
 pgpool:
   replicaCount: 2
   podAntiAffinityPreset: soft
