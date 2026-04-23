@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: database-apps
+  namespace: efp-argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: postgresql-ha
+            # Using OCI is more stable for Bitnami charts
+            repo: registry-1.docker.io/bitnamicharts
+            chart: postgresql-ha
+            namespace: efp-pg-ha
+            version: 16.3.2
+            valuesPath: postgresql-ha
+  template:
+    metadata:
+      name: '{{name}}'
+    spec:
+      project: platform
+      sources:
+        - repoURL: '{{repo}}'
+          chart: '{{chart}}'
+          targetRevision: '{{version}}'
+          helm:
+            valueFiles:
+              - $values/apps/{{valuesPath}}//values.yaml
+        - repoURL: https://github.com
+          targetRevision: HEAD
+          ref: values
+      destination:
+        server: https://default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
