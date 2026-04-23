@@ -17,7 +17,7 @@ spec:
             chart: cert-manager
             namespace: cert-manager
             version: "*"
-          - name: postgres-ha
+          - name: postgresql-ha
             repo: https://charts.bitnami.com/bitnami
             chart: "bitnami/postgresql-ha"
             namespace: efp-pg-ha
