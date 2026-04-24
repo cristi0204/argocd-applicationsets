@@ -71,10 +71,10 @@ spec:
     # storageClass: gp3                # set to your storage class
     storageClass: iscsi-dell-me5-retain 
 
-  walStorage:
-    size: 2Gi
-    # storageClass: gp3
-    storageClass: iscsi-dell-me5-retain
+  # walStorage:
+  #   size: 2Gi
+  #   # storageClass: gp3
+  #   storageClass: iscsi-dell-me5-retain
 
   # ---------------------------------------------------------------------------
   # Resources
