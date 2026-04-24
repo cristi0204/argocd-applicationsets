@@ -1,40 +1,40 @@
-apiVersion: argoproj.io/v1alpha1
-kind: ApplicationSet
-metadata:
-  name: database-apps
-  namespace: efp-argocd
-spec:
-  generators:
-    - list:
-        elements:
-          - name: postgres-operator
-            repo: https://cloudnative-pg.github.io/charts
-            chart: "cnpg/cloudnative-pg"
-            namespace: efp-pg-system
-            version: "*"
-            valuesPath: postgres-operator
-  template:
-    metadata:
-      name: '{{name}}'
-    spec:
-      project: platform
-      sources:
-        - repoURL: '{{repo}}'
-          chart: '{{chart}}'
-          targetRevision: '{{version}}'
-          helm:
-            valueFiles:
-              - $values/apps/{{valuesPath}}/values.yaml
-        - repoURL: https://github.com/cristi0204/argocd-applicationsets
-          targetRevision: HEAD
-          # path: apps/{{name}}
-          ref: values
-      destination:
-        server: https://kubernetes.default.svc
-        namespace: '{{namespace}}'
-      syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
-        syncOptions:
-          - CreateNamespace=true
+# apiVersion: argoproj.io/v1alpha1
+# kind: ApplicationSet
+# metadata:
+#   name: database-apps
+#   namespace: efp-argocd
+# spec:
+#   generators:
+#     - list:
+#         elements:
+#           - name: postgres-operator
+#             repo: https://cloudnative-pg.github.io/charts
+#             chart: "cnpg/cloudnative-pg"
+#             namespace: efp-pg-system
+#             version: "*"
+#             valuesPath: postgres-operator
+#   template:
+#     metadata:
+#       name: '{{name}}'
+#     spec:
+#       project: platform
+#       sources:
+#         - repoURL: '{{repo}}'
+#           chart: '{{chart}}'
+#           targetRevision: '{{version}}'
+#           helm:
+#             valueFiles:
+#               - $values/apps/{{valuesPath}}/values.yaml
+#         - repoURL: https://github.com/cristi0204/argocd-applicationsets
+#           targetRevision: HEAD
+#           # path: apps/{{name}}
+#           ref: values
+#       destination:
+#         server: https://kubernetes.default.svc
+#         namespace: '{{namespace}}'
+#       syncPolicy:
+#         automated:
+#           prune: true
+#           selfHeal: true
+#         syncOptions:
+#           - CreateNamespace=true
