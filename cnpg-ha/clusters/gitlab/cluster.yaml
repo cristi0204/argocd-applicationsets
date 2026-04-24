@@ -69,10 +69,12 @@ spec:
   storage:
     size: 50Gi
     # storageClass: gp3                # set to your storage class
+    storageClass: iscsi-dell-me5-imd 
 
   walStorage:
     size: 10Gi
     # storageClass: gp3
+    storageClass: iscsi-dell-me5-imd
 
   # ---------------------------------------------------------------------------
   # Resources
