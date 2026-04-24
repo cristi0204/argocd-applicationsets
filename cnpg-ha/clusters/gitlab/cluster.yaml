@@ -25,9 +25,9 @@ spec:
       max_wal_size: "1GB"
       min_wal_size: "512MB"
 
-      # Replication
-      hot_standby: "true"
-      hot_standby_feedback: "true"
+      # # Replication
+      # hot_standby: "true"
+      # hot_standby_feedback: "true"
 
       # Logging
       log_min_duration_statement: "500"
