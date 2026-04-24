@@ -17,7 +17,6 @@ spec:
       ports:
         - protocol: TCP
           port: 5432
-
     # Allow intra-cluster replication
     - from:
         - podSelector:
@@ -26,3 +25,11 @@ spec:
       ports:
         - protocol: TCP
           port: 5432
+    # Allow CNPG operator to monitor instances
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg-system
+      ports:
+        - protocol: TCP
+          port: 8000
