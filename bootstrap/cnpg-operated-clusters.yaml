@@ -11,7 +11,7 @@ spec:
     # Auto-discover every folder under clusters/
     # Adding a new folder = new PostgreSQL cluster
     - git:
-        repoURL: https://github.com/cristi0204/argocd-applicationsets.git   # ← change this
+        repoURL: https://github.com/cristi0204/argocd-applicationsets   # ← change this
         revision: HEAD
         directories:
           - path: cnpg-ha/clusters/*
@@ -27,7 +27,7 @@ spec:
     spec:
       project: platform
       source:
-        repoURL: https://github.com/cristi0204/argocd-applicationsets.git   # ← change this
+        repoURL: https://github.com/cristi0204/argocd-applicationsets   # ← change this
         targetRevision: HEAD
         path: "{{ .path.path }}"
       destination:
