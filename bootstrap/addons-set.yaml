@@ -17,11 +17,12 @@ spec:
             chart: cert-manager
             namespace: cert-manager
             version: "*"
-          - name: cnpg-operator
-            repo: https://cloudnative-pg.github.io/charts
-            chart: cloudnative-pg
-            namespace: cnpg-system
-            version: "0.23.0"
+            # we will deploy this using argo app instead and just deploy databases with appsets
+          # - name: cnpg-operator
+          #   repo: https://cloudnative-pg.github.io/charts
+          #   chart: cloudnative-pg
+          #   namespace: cnpg-system
+          #   version: "0.23.0"
   template:
     metadata:
       name: '{{name}}'
