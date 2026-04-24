@@ -1,0 +1,131 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: gitlab-db
+spec:
+  instances: 3
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.2-1
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL tuning
+  # ---------------------------------------------------------------------------
+  postgresql:
+    parameters:
+      # Memory
+      shared_buffers: "512MB"
+      effective_cache_size: "1536MB"
+      work_mem: "16MB"
+      maintenance_work_mem: "256MB"
+
+      # Connections
+      max_connections: "200"
+
+      # WAL
+      wal_buffers: "16MB"
+      max_wal_size: "1GB"
+      min_wal_size: "512MB"
+
+      # Replication
+      hot_standby: "true"
+      hot_standby_feedback: "true"
+
+      # Logging
+      log_min_duration_statement: "500"
+      log_checkpoints: "on"
+      log_lock_waits: "on"
+
+      # Autovacuum
+      autovacuum_max_workers: "3"
+      autovacuum_vacuum_scale_factor: "0.05"
+      autovacuum_analyze_scale_factor: "0.02"
+
+    pg_hba:
+      - host all all 10.0.0.0/8 scram-sha-256
+      - host all all 172.16.0.0/12 scram-sha-256
+      - host all all 192.168.0.0/16 scram-sha-256
+
+  # ---------------------------------------------------------------------------
+  # Bootstrap — create the GitLab database with required extensions
+  # ---------------------------------------------------------------------------
+  bootstrap:
+    initdb:
+      database: gitlabhq_production
+      owner: gitlab
+      secret:
+        name: gitlab-db-app-credentials
+      postInitApplicationSQL:
+        - CREATE EXTENSION IF NOT EXISTS pg_trgm;
+        - CREATE EXTENSION IF NOT EXISTS btree_gist;
+        - CREATE EXTENSION IF NOT EXISTS amcheck;
+        - CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+        - CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+  superuserSecret:
+    name: gitlab-db-superuser-credentials
+
+  # ---------------------------------------------------------------------------
+  # Storage
+  # ---------------------------------------------------------------------------
+  storage:
+    size: 50Gi
+    # storageClass: gp3                # set to your storage class
+
+  walStorage:
+    size: 10Gi
+    # storageClass: gp3
+
+  # ---------------------------------------------------------------------------
+  # Resources
+  # ---------------------------------------------------------------------------
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "2"
+
+  # ---------------------------------------------------------------------------
+  # HA: spread across nodes (use topology.kubernetes.io/zone for multi-AZ)
+  # ---------------------------------------------------------------------------
+  affinity:
+    enablePodAntiAffinity: true
+    topologyKey: kubernetes.io/hostname
+    podAntiAffinityType: preferred     # change to "required" if you have 3+ nodes
+
+  # ---------------------------------------------------------------------------
+  # Switchover strategy
+  # ---------------------------------------------------------------------------
+  primaryUpdateStrategy: unsupervised
+  primaryUpdateMethod: switchover
+  stopDelay: 300
+  smartShutdownTimeout: 180
+  switchoverDelay: 600
+
+  # ---------------------------------------------------------------------------
+  # Monitoring
+  # ---------------------------------------------------------------------------
+  monitoring:
+    enablePodMonitor: false            # set true if Prometheus is installed
+
+  # ---------------------------------------------------------------------------
+  # Backups — DISABLED for now, uncomment when ready
+  # ---------------------------------------------------------------------------
+  # backup:
+  #   barmanObjectStore:
+  #     destinationPath: "s3://your-bucket/cnpg/gitlab/"
+  #     endpointURL: "https://s3.your-provider.com"     # leave empty for AWS S3
+  #     s3Credentials:
+  #       accessKeyId:
+  #         name: gitlab-db-backup-creds
+  #         key: ACCESS_KEY_ID
+  #       secretAccessKey:
+  #         name: gitlab-db-backup-creds
+  #         key: ACCESS_SECRET_KEY
+  #     wal:
+  #       compression: gzip
+  #       maxParallel: 4
+  #     data:
+  #       compression: gzip
+  #       immediateCheckpoint: true
+  #   retentionPolicy: "30d"
