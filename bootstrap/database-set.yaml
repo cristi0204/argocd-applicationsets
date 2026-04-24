@@ -7,12 +7,12 @@ spec:
   generators:
     - list:
         elements:
-          - name: postgresql-ha
+          - name: cloudnative-pg
             # Using OCI is more stable for Bitnami charts
-            repo: registry-1.docker.io/bitnamicharts
-            chart: postgresql-ha
-            namespace: efp-pg-ha
-            version: "16.3.2"
+            repo: https://cloudnative-pg.github.io/charts
+            chart: "cnpg/cloudnative-pg"
+            namespace: efp-pg-system
+            version: "*"
             valuesPath: postgresql-ha
   template:
     metadata:
