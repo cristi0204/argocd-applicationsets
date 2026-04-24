@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: cnpg-clusters
+  namespace: efp-argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+
+  generators:
+    # Auto-discover every folder under clusters/
+    # Adding a new folder = new PostgreSQL cluster
+    - git:
+        repoURL: https://github.com/cristi0204/argocd-applicationsets.git   # ← change this
+        revision: HEAD
+        directories:
+          - path: cnpg-ha/clusters/*
+
+  template:
+    metadata:
+      name: "cnpg-{{ .path.basename }}"
+      namespace: efp-argocd
+      labels:
+        app.kubernetes.io/part-of: cnpg-clusters
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: platform
+      source:
+        repoURL: https://github.com/cristi0204/argocd-applicationsets.git   # ← change this
+        targetRevision: HEAD
+        path: "{{ .path.path }}"
+      destination:
+        server: https://kubernetes.default.svc
+        # Namespace is defined inside each cluster's manifests
+        # (ArgoCD will create it via CreateNamespace=true)
+        namespace: "{{ .path.basename }}-db"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+          - RespectIgnoreDifferences=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+      ignoreDifferences:
+        - group: postgresql.cnpg.io
+          kind: Cluster
+          jsonPointers:
+            - /status
