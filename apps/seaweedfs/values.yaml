@@ -1,148 +1,146 @@
-releaseName: seaweedfs
-valuesObject:
-  # =======================================================
-  # Global
-  # =======================================================
-  global:
-    imagePullSecrets: []
+# =======================================================
+# Global
+# =======================================================
+global:
+  imagePullSecrets: []
 
-  # =======================================================
-  # Master — 3 replicas for HA (Raft consensus)
-  # =======================================================
-  master:
-    enabled: true
-    replicas: 3
-    resources:
-      requests:
-        cpu: 100m
-        memory: 256Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
-    data:
+# =======================================================
+# Master — 3 replicas for HA (Raft consensus)
+# =======================================================
+master:
+  enabled: true
+  replicas: 3
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  data:
+    type: persistentVolumeClaim
+    size: 5Gi
+    storageClass: iscsi-dell-me5-retain
+  # Spread across nodes
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - master
+            topologyKey: kubernetes.io/hostname
+  # Default replication: 001 = replicate to one other volume server
+  defaultReplication: "001"
+
+# =======================================================
+# Volume — stores the actual data blobs
+# 3 replicas across nodes, iSCSI-backed storage
+# =======================================================
+volume:
+  enabled: true
+  replicas: 3
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  dataDirs:
+    - name: data
       type: persistentVolumeClaim
-      size: 5Gi
+      size: 50Gi
       storageClass: iscsi-dell-me5-retain
-    # Spread across nodes
-    affinity:
-      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                  - key: app.kubernetes.io/component
-                    operator: In
-                    values:
-                      - master
-              topologyKey: kubernetes.io/hostname
-    # Default replication: 001 = replicate to one other volume server
-    defaultReplication: "001"
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - volume
+            topologyKey: kubernetes.io/hostname
+  # Minimum free disk space before marking read-only
+  minFreeSpacePercent: 5
 
-  # =======================================================
-  # Volume — stores the actual data blobs
-  # 3 replicas across nodes, iSCSI-backed storage
-  # =======================================================
-  volume:
-    enabled: true
-    replicas: 3
-    resources:
-      requests:
-        cpu: 200m
-        memory: 512Mi
-      limits:
-        cpu: "1"
-        memory: 1Gi
-    dataDirs:
-      - name: data
-        type: persistentVolumeClaim
-        size: 50Gi
-        storageClass: iscsi-dell-me5-retain
-    affinity:
-      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                  - key: app.kubernetes.io/component
-                    operator: In
-                    values:
-                      - volume
-              topologyKey: kubernetes.io/hostname
-    # Minimum free disk space before marking read-only
-    minFreeSpacePercent: 5
+# =======================================================
+# Filer — metadata + S3 gateway
+# 2 replicas for HA
+# =======================================================
+filer:
+  enabled: true
+  replicas: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  data:
+    type: persistentVolumeClaim
+    size: 5Gi
+    storageClass: iscsi-dell-me5-retain
+  # PostgreSQL filer backend (metadata stored in CNPG cluster)
+  extraEnvironmentVars:
+    WEED_LEVELDB2_ENABLED: "false"
+    WEED_POSTGRES2_ENABLED: "true"
+    WEED_POSTGRES2_HOSTNAME: "gitlab-db-rw.gitlab-db.svc"
+    WEED_POSTGRES2_PORT: "5432"
+    WEED_POSTGRES2_DATABASE: "seaweedfs_filer"
+    WEED_POSTGRES2_USERNAME: "seaweedfs"
+    WEED_POSTGRES2_SSLMODE: "disable"
+    WEED_POSTGRES2_CONNECTION_MAX_IDLE: "5"
+    WEED_POSTGRES2_CONNECTION_MAX_OPEN: "50"
+    WEED_POSTGRES2_CONNECTION_MAX_LIFETIME_SECONDS: "600"
+  # Password is injected from a secret
+  extraSecretEnvironmentVars:
+    - name: WEED_POSTGRES2_PASSWORD
+      secretName: seaweedfs-db-credentials
+      secretKey: password
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - filer
+            topologyKey: kubernetes.io/hostname
 
-  # =======================================================
-  # Filer — metadata + S3 gateway
-  # 2 replicas for HA
-  # =======================================================
-  filer:
-    enabled: true
-    replicas: 2
-    resources:
-      requests:
-        cpu: 100m
-        memory: 256Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
-    data:
-      type: persistentVolumeClaim
-      size: 5Gi
-      storageClass: iscsi-dell-me5-retain
-    # PostgreSQL filer backend (metadata stored in CNPG cluster)
-    extraEnvironmentVars:
-      WEED_LEVELDB2_ENABLED: "false"
-      WEED_POSTGRES2_ENABLED: "true"
-      WEED_POSTGRES2_HOSTNAME: "gitlab-db-rw.gitlab-db.svc"
-      WEED_POSTGRES2_PORT: "5432"
-      WEED_POSTGRES2_DATABASE: "seaweedfs_filer"
-      WEED_POSTGRES2_USERNAME: "seaweedfs"
-      WEED_POSTGRES2_SSLMODE: "disable"
-      WEED_POSTGRES2_CONNECTION_MAX_IDLE: "5"
-      WEED_POSTGRES2_CONNECTION_MAX_OPEN: "50"
-      WEED_POSTGRES2_CONNECTION_MAX_LIFETIME_SECONDS: "600"
-    # Password is injected from a secret
-    extraSecretEnvironmentVars:
-      - name: WEED_POSTGRES2_PASSWORD
-        secretName: seaweedfs-db-credentials
-        secretKey: password
-    affinity:
-      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                  - key: app.kubernetes.io/component
-                    operator: In
-                    values:
-                      - filer
-              topologyKey: kubernetes.io/hostname
-
-  # =======================================================
-  # S3 API — exposes S3-compatible endpoint
-  # =======================================================
-  s3:
-    enabled: true
-    replicas: 2
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 500m
-        memory: 256Mi
-    # Pre-create buckets GitLab needs
-    createBuckets:
-      - name: gitlab-artifacts
-      - name: gitlab-uploads
-      - name: gitlab-lfs
-      - name: gitlab-packages
-      - name: gitlab-registry
-      - name: gitlab-backups
-      - name: gitlab-ci-secure-files
-      - name: gitlab-terraform-state
-      - name: gitlab-dependency-proxy
-      - name: gitlab-pages
+# =======================================================
+# S3 API — exposes S3-compatible endpoint
+# =======================================================
+s3:
+  enabled: true
+  replicas: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  # Pre-create buckets GitLab needs
+  createBuckets:
+    - name: gitlab-artifacts
+    - name: gitlab-uploads
+    - name: gitlab-lfs
+    - name: gitlab-packages
+    - name: gitlab-registry
+    - name: gitlab-backups
+    - name: gitlab-ci-secure-files
+    - name: gitlab-terraform-state
+    - name: gitlab-dependency-proxy
+    - name: gitlab-pages
