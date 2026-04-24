@@ -12,11 +12,9 @@ master:
       cpu: 500m
       memory: 512Mi
   data:
-    type: persistentVolumeClaim
-    size: 5Gi
-    storageClass: iscsi-dell-me5-retain
+    type: hostPath
+    hostPathPrefix: /data/seaweedfs-s3/master
   defaultReplication: "001"
-  # Affinity as a string (chart requirement)
   affinity: ""
 
 volume:
@@ -31,9 +29,9 @@ volume:
       memory: 1Gi
   dataDirs:
     - name: data
-      type: persistentVolumeClaim
-      size: 50Gi
-      storageClass: iscsi-dell-me5-retain
+      type: hostPath
+      hostPathPrefix: /data/seaweedfs-s3/volume
+      maxVolumes: 0
   minFreeSpacePercent: 5
   affinity: ""
 
@@ -48,9 +46,8 @@ filer:
       cpu: 500m
       memory: 512Mi
   data:
-    type: persistentVolumeClaim
-    size: 5Gi
-    storageClass: iscsi-dell-me5-retain
+    type: hostPath
+    hostPathPrefix: /data/seaweedfs-s3/filer
   extraEnvironmentVars:
     WEED_LEVELDB2_ENABLED: "false"
     WEED_POSTGRES2_ENABLED: "true"
