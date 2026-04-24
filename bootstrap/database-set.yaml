@@ -7,13 +7,13 @@ spec:
   generators:
     - list:
         elements:
-          - name: cloudnative-pg
+          - name: postgres-operator
             # Using OCI is more stable for Bitnami charts
             repo: https://cloudnative-pg.github.io/charts
             chart: "cnpg/cloudnative-pg"
             namespace: efp-pg-system
             version: "*"
-            valuesPath: postgresql-ha
+            valuesPath: postgres-operator
   template:
     metadata:
       name: '{{name}}'
