@@ -132,20 +132,20 @@ spec:
   #       immediateCheckpoint: true
   #   retentionPolicy: "30d"
 backup:
-    barmanObjectStore:
-      destinationPath: "s3://cnpg-db-backups/gitlab/"
-      endpointURL: "http://efp-s3-cluster-seaweedfs-s3.efp-seaweedfs.svc:8333"
-      s3Credentials:
-        accessKeyId:
-          name: gitlab-db-backup-creds
-          key: ACCESS_KEY_ID
-        secretAccessKey:
-          name: gitlab-db-backup-creds
-          key: ACCESS_SECRET_KEY
-      wal:
-        compression: gzip
-        maxParallel: 4
-      data:
-        compression: gzip
-        immediateCheckpoint: true
+  barmanObjectStore:
+    destinationPath: "s3://cnpg-db-backups/gitlab/"
+    endpointURL: "http://efp-s3-cluster-seaweedfs-s3.efp-seaweedfs.svc:8333"
+    s3Credentials:
+      accessKeyId:
+        name: gitlab-db-backup-creds
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: gitlab-db-backup-creds
+        key: ACCESS_SECRET_KEY
+    wal:
+      compression: gzip
+      maxParallel: 4
+    data:
+      compression: gzip
+      immediateCheckpoint: true
     retentionPolicy: "30d"
