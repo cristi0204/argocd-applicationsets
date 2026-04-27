@@ -1,0 +1,247 @@
+# ================================================================
+# GitLab Helm Chart
+# TLS offload : external Traefik
+# Ingress     : RKE2 nginx, reached via MetalLB VIP
+# DB          : external CNPG PostgreSQL
+# Object store: external SeaweedFS S3
+# SSH         : LoadBalancer on same VIP, port 22 (Traefik TCP)
+# ================================================================
+
+global:
+  edition: ce   # change to 'ee' if you have a license key
+
+  # --------------------------------------------------------------
+  # Hosts — https: true makes GitLab render https:// URLs for
+  # users even though nginx only receives plain HTTP from Traefik
+  # --------------------------------------------------------------
+  hosts:
+    domain: efp-global.eu           # ← CHANGE
+    https: true
+    gitlab:
+      name: gitlab.efp-global.eu   # ← CHANGE
+      https: true
+    registry:
+      name: registry.efp-global.eu  # ← CHANGE
+      https: true
+    minio:
+      enabled: false
+
+  # --------------------------------------------------------------
+  # Ingress — HTTP only inside the cluster
+  # All TLS is terminated at Traefik before hitting this ingress
+  # --------------------------------------------------------------
+  ingress:
+    enabled: true
+    class: nginx
+    configureCertmanager: false
+    tls:
+      enabled: false             # no TLS secrets needed inside the cluster
+    annotations:
+      # Do NOT redirect HTTP→HTTPS inside the cluster (Traefik already did it)
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+      # Trust X-Forwarded-Proto: https sent by Traefik so Rails/Workhorse
+      # knows the user-facing scheme and generates correct URLs / cookies
+      nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+      nginx.ingress.kubernetes.io/forwarded-for-header: "X-Forwarded-For"
+      # Large body sizes for git pushes, LFS, uploads
+      nginx.ingress.kubernetes.io/proxy-body-size: "0"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+      nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+
+  # --------------------------------------------------------------
+  # External PostgreSQL — CNPG cluster in gitlab-db namespace
+  # --------------------------------------------------------------
+  psql:
+    host: gitlab-db-rw.gitlab-db.svc
+    port: 5432
+    database: gitlabhq_production
+    username: gitlab
+    password:
+      secret: gitlab-db-app-credentials
+      key: password              # ← confirm exact key name in your CNPG secret
+
+  # --------------------------------------------------------------
+  # Object storage — SeaweedFS S3 (all buckets, single endpoint)
+  # --------------------------------------------------------------
+  minio:
+    enabled: false
+
+  appConfig:
+    object_store:
+      enabled: true
+      proxy_download: true
+      connection:
+        secret: gitlab-s3-connection
+        key: connection
+
+    artifacts:
+      enabled: true
+      bucket: gitlab-artifacts
+    uploads:
+      enabled: true
+      bucket: gitlab-uploads
+    lfs:
+      enabled: true
+      bucket: gitlab-lfs
+    packages:
+      enabled: true
+      bucket: gitlab-packages
+    terraformState:
+      enabled: true
+      bucket: gitlab-terraform-state
+    ciSecureFiles:
+      enabled: true
+      bucket: gitlab-ci-secure-files
+    dependencyProxy:
+      enabled: true
+      bucket: gitlab-dependency-proxy
+    backups:
+      bucket: gitlab-backups
+      tmpBucket: gitlab-backups-tmp   # create this bucket in SeaweedFS too
+
+  # --------------------------------------------------------------
+  # Container Registry — S3 backed
+  # --------------------------------------------------------------
+  registry:
+    bucket: gitlab-registry
+
+  # --------------------------------------------------------------
+  # GitLab Shell — SSH port exposed via Traefik TCP passthrough
+  # --------------------------------------------------------------
+  shell:
+    port: 22
+
+  smtp:
+    enabled: false
+
+# ================================================================
+# Disable ALL bundled data-layer components
+# ================================================================
+postgresql:
+  install: false
+
+minio:
+  enabled: false
+
+# Keep bundled Redis (no external Redis in your stack)
+redis:
+  install: true
+  master:
+    persistence:
+      storageClass: local-path
+      size: 8Gi
+
+# ================================================================
+# nginx ingress — use RKE2's existing controller, not the bundled one
+# ================================================================
+nginx-ingress:
+  enabled: false
+
+# ================================================================
+# cert-manager — Traefik handles TLS, nothing needed inside
+# ================================================================
+certmanager:
+  install: false
+
+certmanager-issuer:
+  email: ""
+
+# ================================================================
+# Prometheus / Grafana — disable if you have an external stack
+# ================================================================
+prometheus:
+  install: false
+
+grafana:
+  enabled: false
+
+# ================================================================
+# Container Registry
+# ================================================================
+registry:
+  enabled: true
+  storage:
+    secret: gitlab-registry-s3-connection
+    key: config
+  ingress:
+    enabled: true
+    tls:
+      enabled: false
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/proxy-body-size: "0"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+
+# ================================================================
+# Gitaly — Git repository storage
+# 1 PVC per pod: Seagate CSI LUN-overlap bug workaround
+# ================================================================
+gitaly:
+  persistence:
+    enabled: true
+    storageClass: iscsi-dell-me5-retain
+    size: 200Gi                  # ← size to your needs
+    accessMode: ReadWriteOnce
+  replicaCount: 1                # scale only after verifying CSI LUN behaviour
+
+# ================================================================
+# GitLab application components
+# ================================================================
+gitlab:
+
+  # --- Webservice (Puma + Workhorse) ---
+  webservice:
+    replicaCount: 2
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1.5Gi
+      limits:
+        cpu: "2"
+        memory: 3Gi
+    ingress:
+      enabled: true
+      tls:
+        enabled: false
+      annotations:
+        nginx.ingress.kubernetes.io/ssl-redirect: "false"
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+        nginx.ingress.kubernetes.io/proxy-body-size: "0"
+        nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+        nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+
+  # --- Sidekiq ---
+  sidekiq:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        cpu: "1"
+        memory: 2Gi
+
+  # --- GitLab Shell (SSH) ---
+  # Exposed as a LoadBalancer so Traefik can TCP-passthrough port 22
+  # to the same MetalLB VIP that nginx uses (different port)
+  gitlab-shell:
+    service:
+      type: LoadBalancer
+      # Annotate for MetalLB if you want to pin it to the same VIP as nginx.
+      # If your MetalLB pool hands out a fresh IP by default, add:
+      # metallb.universe.tf/loadBalancerIPs: <YOUR-VIP>   # ← CHANGE
+      # or use the sharing annotation to share with nginx:
+      annotations:
+        metallb.universe.tf/allow-shared-ip: "gitlab-vip"  # must match nginx-ingress svc annotation
+      externalTrafficPolicy: Local
+
+  # --- Toolbox (backup runner) ---
+  toolbox:
+    persistence:
+      enabled: true
+      storageClass: local-path
+      size: 10Gi
