@@ -146,7 +146,7 @@ certmanager:
   install: false
 
 certmanager-issuer:
-  email: ""
+  email: "cristian-marian.radu@atos.net"
 
 # ================================================================
 # Prometheus / Grafana — disable if you have an external stack
